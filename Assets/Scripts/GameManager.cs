@@ -136,6 +136,7 @@ public class GameManager : MonoBehaviour
             if (hitRoot.currentColumn >= columnCount + 3 && sourceColumn.Count == sourceIndex + 1 && sourceCard.value == 1)
             {
                 GameObject tempCard = sourceColumn[sourceColumn.Count - 1];
+                tempCard.GetComponent<Card>().currentColumn = hitRoot.currentColumn;
                 sourceColumn.RemoveAt(sourceColumn.Count - 1);
                 targetColumn.Add(tempCard);
                 // clear card selections
