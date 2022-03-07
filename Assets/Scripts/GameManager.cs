@@ -131,21 +131,37 @@ public class GameManager : MonoBehaviour
             Card sourceCard = sourceObj.GetComponent<Card>();
             List<GameObject> sourceColumn = columns[sourceCard.currentColumn];
             List<GameObject> targetColumn = columns[hitRoot.currentColumn];
-            // move copy of selected cards to temp column
             int sourceIndex = sourceColumn.IndexOf(sourceObj);
-            List<GameObject> tempColumn = sourceColumn.GetRange(sourceIndex, sourceColumn.Count - sourceIndex);
-            // update all column vars
-            foreach (GameObject obj in tempColumn)
+            // CASE: moving to a victory column root, must be last card in a game column, must be ace
+            if (hitRoot.currentColumn >= columnCount + 3 && sourceColumn.Count == sourceIndex + 1 && sourceCard.value == 1)
             {
-                obj.GetComponent<Card>().currentColumn = hitRoot.currentColumn;
+                GameObject tempCard = sourceColumn[sourceColumn.Count - 1];
+                sourceColumn.RemoveAt(sourceColumn.Count - 1);
+                targetColumn.Add(tempCard);
+                // clear card selections
+                sourceObj.GetComponent<SpriteRenderer>().color = Color.white;
+                sourceObj = null;
+                targetObj = null;
             }
-            //clean up and move
-            sourceColumn.RemoveRange(sourceIndex, sourceColumn.Count - sourceIndex);
-            targetColumn.AddRange(tempColumn);
-            // clear card selections
-            sourceObj.GetComponent<SpriteRenderer>().color = Color.white;
-            sourceObj = null;
-            targetObj = null;
+            // CASE: moving to a game column root
+            else if (hitRoot.currentColumn < columnCount)
+            {
+                // move copy of selected cards to temp column
+                List<GameObject> tempColumn = sourceColumn.GetRange(sourceIndex, sourceColumn.Count - sourceIndex);
+                // update all column vars
+                foreach (GameObject obj in tempColumn)
+                {
+                    obj.GetComponent<Card>().currentColumn = hitRoot.currentColumn;
+                }
+                //clean up and move
+                sourceColumn.RemoveRange(sourceIndex, sourceColumn.Count - sourceIndex);
+                targetColumn.AddRange(tempColumn);
+                // clear card selections
+                sourceObj.GetComponent<SpriteRenderer>().color = Color.white;
+                sourceObj = null;
+                targetObj = null;
+            }
+            
             // refresh display
             DisplayGameState();
         }
