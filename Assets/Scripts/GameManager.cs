@@ -98,28 +98,15 @@ public class GameManager : MonoBehaviour
     }
 
 
-    void HitVictoryPile(GameObject hitObj)
-    {
-        // CASE: select root and no card already selected
-        if (hitObj.GetComponent<ColumnRoot>() != null && sourceObj == null)
-        {
-            Debug.Log("Cannot select root as first card");
-            return;
-        }
-        // CASE: select root and a card is already selected
-        if (hitObj.GetComponent<ColumnRoot>() != null && sourceObj != null)
-        {
-            Debug.Log("Cannot select root as first card");
-            return;
-        }
-    }
-
-
     void HitRoot(GameObject hitObj)
     {
         ColumnRoot hitRoot = hitObj.GetComponent<ColumnRoot>();
         // CASE: no card already selected
-        if (sourceObj == null)
+        if (sourceObj == null && hitRoot.currentColumn == columnCount)
+        {
+            RefillDrawPile(hitObj);
+        }
+        else if (sourceObj == null)
         {
             Debug.Log("Cannot select root as first card");
             return;
@@ -179,10 +166,19 @@ public class GameManager : MonoBehaviour
         // CASE: no card already selected
         if (sourceObj == null)
         {
+            Debug.Log(hitObj.GetComponent<Card>().currentColumn);
+            // CASE: draw a new set of cards
+            if (hitObj.GetComponent<Card>().currentColumn == columnCount)
+            {
+                DrawCard(hitObj);
+                DisplayGameState();
+                return;
+            }
             Debug.Log("Selected a source card");
             hitObj.GetComponent<SpriteRenderer>().color = Color.gray;
             sourceObj = hitObj;
             return;
+            
         }
         Card sourceCard = sourceObj.GetComponent<Card>();
         Card targetCard = hitObj.GetComponent<Card>();
@@ -202,9 +198,6 @@ public class GameManager : MonoBehaviour
         // CASE: a card is already selected
         else
         {
-            Debug.Log(sourceCard.value);
-            Debug.Log(targetCard.value);
-
             // CASE: the card is in the victory columns, source is the last card in its game column, and target card value is one less than source
             if (targetCard.currentColumn >= columnCount + 3 && sourceColumn.Count == sourceIndex + 1 && sourceCard.value - 1 == targetCard.value)
             {
@@ -273,6 +266,96 @@ public class GameManager : MonoBehaviour
     }
 
 
+    // draws a card from the draw pile and adds it to the active draw pile, moves current drawn cards to discard pile
+    void DrawCard(GameObject hitObj)
+    {
+        // get each column for draw/discard handling
+        List<GameObject> drawColumn = columns[columnCount];
+        List<GameObject> activeDrawColumn = columns[columnCount + 1];
+        List<GameObject> discardColumn = columns[columnCount + 2];
+
+        // CASE: click on draw card and stack is full
+        discardColumn.AddRange(activeDrawColumn.GetRange(0, activeDrawColumn.Count));
+        activeDrawColumn.RemoveRange(0, activeDrawColumn.Count);
+        if (drawColumn.Count > 4)
+        {
+            activeDrawColumn.AddRange(drawColumn.GetRange(drawColumn.Count - 4, 3));
+            drawColumn.RemoveRange(drawColumn.Count - 4, 3);
+        }
+        // CASE: click on draw card and draw column on last 3 or less cards
+        else
+        {
+            activeDrawColumn.AddRange(drawColumn.GetRange(1, drawColumn.Count - 1));
+            drawColumn.RemoveRange(1, drawColumn.Count - 1);
+        }
+        foreach (GameObject obj in drawColumn)
+        {
+            Card objCard = obj.GetComponent<Card>();
+            if (objCard != null)
+            {
+                objCard.currentColumn = columnCount;
+            }
+        }
+        foreach (GameObject obj in activeDrawColumn)
+        {
+            Card objCard = obj.GetComponent<Card>();
+            if (objCard != null)
+            {
+                objCard.currentColumn = columnCount + 1;
+            }
+        }
+        foreach (GameObject obj in discardColumn)
+        {
+            Card objCard = obj.GetComponent<Card>();
+            if (objCard != null)
+            {
+                objCard.currentColumn = columnCount + 3;
+            }
+        }
+    }
+
+
+    // resets the draw pile if its root is clicked
+    void RefillDrawPile(GameObject hitObj)
+    {
+        // get each column for draw/discard handling
+        List<GameObject> drawColumn = columns[columnCount];
+        List<GameObject> activeDrawColumn = columns[columnCount + 1];
+        List<GameObject> discardColumn = columns[columnCount + 2];
+        // reset draw/active/discard piles
+        discardColumn.AddRange(activeDrawColumn.GetRange(0, activeDrawColumn.Count));
+        activeDrawColumn.RemoveRange(0, activeDrawColumn.Count);
+        drawColumn.AddRange(discardColumn.GetRange(0, discardColumn.Count));
+        discardColumn.RemoveRange(0, discardColumn.Count);
+        foreach (GameObject obj in drawColumn)
+        {
+            Card objCard = obj.GetComponent<Card>();
+            if (objCard != null)
+            {
+                objCard.currentColumn = columnCount;
+            }
+        }
+        foreach (GameObject obj in activeDrawColumn)
+        {
+            Card objCard = obj.GetComponent<Card>();
+            if (objCard != null)
+            {
+                objCard.currentColumn = columnCount + 1;
+            }
+        }
+        foreach (GameObject obj in discardColumn)
+        {
+            Card objCard = obj.GetComponent<Card>();
+            if (objCard != null)
+            {
+                objCard.currentColumn = columnCount + 3;
+            }
+        }
+        // refresh display
+        DisplayGameState();
+    }
+
+
     // creates a card deck string data based on suites/deck size
     public void CreateDeck()
     {
@@ -284,8 +367,7 @@ public class GameManager : MonoBehaviour
                 deck.Add(cardData);
             }
         }
-
-        // add deck shuffle here (Fisher-Yates)
+        // deck shuffle (Fisher-Yates)
         for (var i = deck.Count - 1; i > 0; i--)
         {
             int rnd = Random.Range(0, i);
@@ -304,9 +386,8 @@ public class GameManager : MonoBehaviour
         {
             columns.Add(new List<GameObject>());
         }
-
         // add column roots for game columns
-        for (var i = 0; i < columnCount; i++)
+        for (var i = 0; i <= columnCount; i++)
         {
             GameObject newRoot = Instantiate(rootPrefab);
             newRoot.name = "Root" + i.ToString();
@@ -321,7 +402,6 @@ public class GameManager : MonoBehaviour
             newRoot.GetComponent<ColumnRoot>().currentColumn = columnCount + 3 + i;
             columns[columnCount + 3 + i].Add(newRoot);
         }
-
         // create and add Cards to each column
         int cardNum = 0;
         for (var i = 0; i < columnCount; i++)
@@ -335,13 +415,12 @@ public class GameManager : MonoBehaviour
                 cardNum++;
             }
         }
-
         // add remaining cards to draw pile
         for (var i = cardNum; i < deckSize; i++)
         {
             GameObject newCard = Instantiate(cardPrefab);
             newCard.name = deck[cardNum];
-            newCard.GetComponent<Card>().SetupCard(deck[cardNum], cardTheme, 10);
+            newCard.GetComponent<Card>().SetupCard(deck[cardNum], cardTheme, columnCount);
             columns[columnCount].Add(newCard);
             cardNum++;
         }
@@ -387,24 +466,73 @@ public class GameManager : MonoBehaviour
                 // set card z position
                 float zpos = 0.0f - j * 0.1f;
                 columns[i][j].transform.position = new Vector3(xpos, ypos, zpos);
+            }
 
-                // set card visibility
-                if (j == columns[i].Count - 1)
-                {
-                    columns[i][j].gameObject.GetComponent<Card>().ToggleVisibility();
-                    columns[i][j].gameObject.GetComponent<Card>().ToggleSelectable();
-                }
+            // set visibility and selectability of last card
+            Card lastCard = columns[i][columns[i].Count - 1].GetComponent<Card>();
+            if (lastCard != null && lastCard.isVisible == false)
+            {
+                lastCard.ToggleVisibility();
+            }
+            if (lastCard != null && lastCard.isSelectable == false)
+            {
+                lastCard.ToggleSelectable();
             }
         }
 
-        // place draw/temp/discard piles (cols 7, 8, 9)
+        // place draw pile (col 7)
         List<GameObject> drawPile = columns[columnCount];
         for (var i = 0; i < drawPile.Count; i++)
         {
-            float xpos = -2.5f;
+            float xpos = -7.5f;
             float ypos = 3.0f;
             float zpos = 0.0f - i * 0.1f;
             drawPile[i].transform.position = new Vector3(xpos, ypos, zpos);
+            Card drawPileCard = drawPile[i].GetComponent<Card>();
+            if (drawPileCard != null && drawPileCard.isVisible == true)
+            {
+                drawPileCard.ToggleVisibility();
+            }
+        }
+        // make top draw card selectable
+        Card topDrawCard = drawPile[drawPile.Count - 1].GetComponent<Card>();
+        if (topDrawCard != null && topDrawCard.isSelectable == false)
+        {
+            topDrawCard.ToggleSelectable();
+        }
+
+        // place active draw pile (col 8)
+        List<GameObject> activeDrawPile = columns[columnCount + 1];
+        for (var i = 0; i < activeDrawPile.Count; i++)
+        {
+            float xpos = -5.0f + i * 0.35f;
+            float ypos = 3.0f;
+            float zpos = 0.0f - i * 0.1f;
+            activeDrawPile[i].transform.position = new Vector3(xpos, ypos, zpos);
+            Card activeDrawPileCard = activeDrawPile[i].GetComponent<Card>();
+            if (activeDrawPileCard != null && activeDrawPileCard.isVisible == false)
+            {
+                activeDrawPileCard.ToggleVisibility();
+            }
+        }
+        // make top active draw card selectable
+        if (activeDrawPile.Count > 0)
+        {
+            Card topActiveDrawCard = activeDrawPile[activeDrawPile.Count - 1].GetComponent<Card>();
+            if (topActiveDrawCard.isSelectable == false)
+            {
+                topActiveDrawCard.ToggleSelectable();
+            }
+        }
+        
+        // move discarded cards
+        List<GameObject> discardPile = columns[columnCount + 2];
+        if (discardPile.Count > 0)
+        {
+            foreach (GameObject obj in discardPile)
+            {
+                obj.transform.position = new Vector3(50, 50, 50);
+            }
         }
 
         // place victory piles

@@ -38,7 +38,7 @@ public class Card : MonoBehaviour
             spriteRenderer.sprite = cardBack;
             isVisible = false;
         }
-        if (isVisible == false)
+        else
         {
             spriteRenderer.sprite = cardFront;
             isVisible = true;
@@ -51,7 +51,7 @@ public class Card : MonoBehaviour
         {
             isSelectable = false;
         }
-        if (isSelectable == false)
+        else
         {
             isSelectable = true;
         }
@@ -130,7 +130,6 @@ public class Card : MonoBehaviour
         {
             cardFrontLookup += "diamonds";
         }
-        
         Sprite frontSprite = Resources.Load<Sprite>(cardTheme + "/" + cardFrontLookup);
         Sprite backSprite = Resources.Load<Sprite>(cardTheme + "/" + "card_back");
         return new Sprite[] { frontSprite, backSprite };
