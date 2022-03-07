@@ -184,23 +184,47 @@ public class GameManager : MonoBehaviour
             sourceObj = hitObj;
             return;
         }
+        Card sourceCard = sourceObj.GetComponent<Card>();
+        Card targetCard = hitObj.GetComponent<Card>();
+        SpriteRenderer sourceRenderer = sourceObj.GetComponent<SpriteRenderer>();
+        SpriteRenderer targetRenderer = hitObj.GetComponent<SpriteRenderer>();
+        List<GameObject> sourceColumn = columns[sourceCard.currentColumn];
+        List<GameObject> targetColumn = columns[targetCard.currentColumn];
+        int sourceIndex = sourceColumn.IndexOf(sourceObj);
+        // CASE: selected same card again
+        if (hitObj == sourceObj)
+        {
+            Debug.Log("Deselected the source card");
+            targetRenderer.color = Color.white;
+            sourceObj = null;
+            return;
+        }
         // CASE: a card is already selected
         else
         {
-            // CASE: selected same card again
-            if (hitObj == sourceObj)
+            Debug.Log(sourceCard.value);
+            Debug.Log(targetCard.value);
+
+            // CASE: the card is in the victory columns, source is the last card in its game column, and target card value is one less than source
+            if (targetCard.currentColumn >= columnCount + 3 && sourceColumn.Count == sourceIndex + 1 && sourceCard.value - 1 == targetCard.value)
             {
-                Debug.Log("Deselected the source card");
-                hitObj.GetComponent<SpriteRenderer>().color = Color.white;
+                Debug.Log("Moving card from game column to card in victory column");
+                GameObject tempCard = sourceColumn[sourceColumn.Count - 1];
+                tempCard.GetComponent<Card>().currentColumn = sourceCard.currentColumn;
+                sourceColumn.RemoveAt(sourceColumn.Count - 1);
+                targetColumn.Add(tempCard);
+                // clear card selections
+                sourceRenderer.color = Color.white;
                 sourceObj = null;
-                return;
+                targetObj = null;
+                // refresh display
+                DisplayGameState();
             }
-            // CASE: selected a new selectable card
-            else
+            // CASE: the card is in the game columns
+            else if (targetCard.currentColumn < columnCount)
             {
+                // CASE: selected a new selectable card
                 Debug.Log("Selected a target card");
-                Card sourceCard = sourceObj.GetComponent<Card>();
-                Card targetCard = hitObj.GetComponent<Card>(); ;
                 // CASE: both cards are red
                 if ((sourceCard.suite == "H" || sourceCard.suite == "D") && (targetCard.suite == "H" || targetCard.suite == "D"))
                 {
@@ -220,10 +244,7 @@ public class GameManager : MonoBehaviour
                     if (sourceCard.value + 1 == targetCard.value)
                     {
                         Debug.Log("Both cards have acceptable values");
-                        List<GameObject> sourceColumn = columns[sourceCard.currentColumn];
-                        List<GameObject> targetColumn = columns[targetCard.currentColumn];
                         // move copy of selected cards to temp column
-                        int sourceIndex = sourceColumn.IndexOf(sourceObj);
                         List<GameObject> tempColumn = sourceColumn.GetRange(sourceIndex, sourceColumn.Count - sourceIndex);
                         // update all column vars
                         foreach (GameObject obj in tempColumn)
@@ -234,7 +255,7 @@ public class GameManager : MonoBehaviour
                         sourceColumn.RemoveRange(sourceIndex, sourceColumn.Count - sourceIndex);
                         targetColumn.AddRange(tempColumn);
                         // clear card selections
-                        sourceObj.GetComponent<SpriteRenderer>().color = Color.white;
+                        sourceRenderer.color = Color.white;
                         sourceObj = null;
                         targetObj = null;
                         // refresh display
