@@ -199,11 +199,11 @@ public class GameManager : MonoBehaviour
         else
         {
             // CASE: the card is in the victory columns, source is the last card in its game column, and target card value is one less than source
-            if (targetCard.currentColumn >= columnCount + 3 && sourceColumn.Count == sourceIndex + 1 && sourceCard.value - 1 == targetCard.value)
+            if (targetCard.currentColumn >= columnCount + 3 && sourceColumn.Count == sourceIndex + 1 && sourceCard.value - 1 == targetCard.value && targetCard.suite == sourceCard.suite)
             {
                 Debug.Log("Moving card from game column to card in victory column");
                 GameObject tempCard = sourceColumn[sourceColumn.Count - 1];
-                tempCard.GetComponent<Card>().currentColumn = sourceCard.currentColumn;
+                tempCard.GetComponent<Card>().currentColumn = targetCard.currentColumn;
                 sourceColumn.RemoveAt(sourceColumn.Count - 1);
                 targetColumn.Add(tempCard);
                 // clear card selections
