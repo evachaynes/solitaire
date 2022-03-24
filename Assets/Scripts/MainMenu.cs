@@ -7,10 +7,6 @@ public class MainMenu : MonoBehaviour
 {
     public void loadNextScene(string sceneName)
     {
-        if (sceneName == "Menu")
-        {
-            Time.timeScale = 1;
-        }
         SceneManager.LoadScene(sceneName);
     }
 
@@ -26,5 +22,11 @@ public class MainMenu : MonoBehaviour
         {
             creditsTextUI.enabled = false;
         }
+    }
+
+    public void CloseMenu()
+    {
+        GameObject exitMenuUI = GameObject.Find("ExitMenu");
+        exitMenuUI.SetActive(false);
     }
 }

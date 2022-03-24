@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class GameManager : MonoBehaviour
 {
@@ -33,11 +34,13 @@ public class GameManager : MonoBehaviour
     [SerializeField] public List<GameObject> victoryDiamonds;
     public GameObject sourceObj;
     public GameObject targetObj;
-
+    GameObject exitMenuUI;
 
     // Start is called before the first frame update
     void Start()
     {
+        exitMenuUI = GameObject.Find("ExitMenu");
+        exitMenuUI.SetActive(false);
         CreateDeck();
         NewGameState(deck);
         DisplayGameState();
@@ -65,7 +68,29 @@ public class GameManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetMouseButtonDown(0))
+        if (columns[columnCount + 3].Count + columns[columnCount + 4].Count + columns[columnCount + 5].Count + columns[columnCount + 6].Count == 56)
+        {
+            TextMeshProUGUI victoryTextUI;
+            victoryTextUI = GameObject.Find("Victory").GetComponent<TextMeshProUGUI>();
+            if (victoryTextUI.enabled == false)
+            {
+                victoryTextUI.enabled = true;
+            }
+        }
+
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            if (exitMenuUI.activeSelf == false)
+            {
+                exitMenuUI.SetActive(true);
+            }
+            else
+            {
+                exitMenuUI.SetActive(false);
+            }
+        }
+
+            if (Input.GetMouseButtonDown(0))
         {
             // send ray to touch position
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
